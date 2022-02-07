@@ -73,7 +73,7 @@
                 android:layout_marginEnd="6dp"
                 android:background="@drawable/background_title_bottom"
                 android:fontFamily="@font/amaranth_bold"
-                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
                 android:text="1"
                 android:textSize="18sp"
                 android:textColor="@color/app_color_light"
@@ -262,8 +262,7 @@
                             android:layout_width="0dp"
                             android:layout_weight="1"
                             android:layout_height="43dp"
-                            android:background="@color/white_cell"
-                            android:src="@drawable/icon_horse"/>
+                            android:background="@color/white_cell" />
                         <ImageView
                             android:id="@+id/c17"
                             android:tag="c17"
