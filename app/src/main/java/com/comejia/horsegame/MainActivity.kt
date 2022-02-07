@@ -16,6 +16,7 @@ class MainActivity : AppCompatActivity() {
     private var cellSelectedY = 0
     private var moves = 8*8
     private var movesRequired = 4
+    private var bonus = 0
     private lateinit var board: Array<IntArray>
     private lateinit var binding: ActivityMainBinding
 
@@ -107,6 +108,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun selectCell(x: Int, y: Int) {
+        moves--
+        showMovesAmount(moves)
+
+        if (isBonusCell(x, y)) {
+            bonus++
+            binding.tvBonusData.text = " + $bonus"
+        }
+
         paintHorseCell(cellSelectedX, cellSelectedY, R.color.previous_cell)
         clearOptions(cellSelectedX, cellSelectedY)
         cellSelectedX = x
@@ -115,12 +124,13 @@ class MainActivity : AppCompatActivity() {
         paintOptions(x, y)
 
         setBoardCell(x, y, 1)
-        moves--
-        showMovesAmount(moves)
+
         if (moves > 0 && isBonusMove(moves)) {
             addNewBonus()
         }
     }
+
+    private fun isBonusCell(x: Int, y: Int): Boolean = board[x][y] == 2
 
     private fun addNewBonus() {
         var bonusCellX: Int
