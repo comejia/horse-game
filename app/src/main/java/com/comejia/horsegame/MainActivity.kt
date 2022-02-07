@@ -3,12 +3,15 @@ package com.comejia.horsegame
 import android.graphics.Point
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
 import android.widget.TableRow
 import androidx.core.content.ContextCompat
 import com.comejia.horsegame.databinding.ActivityMainBinding
+import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
 class MainActivity : AppCompatActivity() {
@@ -21,14 +24,72 @@ class MainActivity : AppCompatActivity() {
     private lateinit var board: Array<IntArray>
     private lateinit var binding: ActivityMainBinding
 
+    private var timeHandler: Handler? = null
+    private var timeInSeconds = 0L
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         initScreenGame()
+        startGame()
+    }
+
+    private fun startGame() {
         resetBoard()
+        clearBoard()
         setFirstPosition()
+        resetTime()
+        startTime()
+    }
+
+    private fun startTime() {
+        timeHandler = Handler(Looper.getMainLooper())
+        chronometer.run()
+    }
+
+    private fun resetTime() {
+        timeHandler?.removeCallbacks(chronometer)
+        timeInSeconds = 0
+        binding.tvTimeData.text = getFormattedTime(timeInSeconds)
+    }
+
+    private fun stopTime() {
+        timeHandler?.removeCallbacks(chronometer)
+    }
+
+    private var chronometer: Runnable = object: Runnable {
+        override fun run() {
+            try {
+                timeInSeconds++
+                updateTimeView(timeInSeconds)
+            } finally {
+                timeHandler?.postDelayed(this, 1000L)
+            }
+        }
+    }
+
+    private fun updateTimeView(seconds: Long) {
+        binding.tvTimeData.text = getFormattedTime(seconds)
+    }
+
+    private fun getFormattedTime(seconds: Long): String {
+        val min = TimeUnit.SECONDS.toMinutes(seconds)
+        val sec = seconds - TimeUnit.MINUTES.toSeconds(min)
+        return String.format("%02d:%02d", min, sec)
+    }
+
+    private fun clearBoard() {
+        for (i in board.indices) {
+            for (j in board.indices) {
+                val image: ImageView = findViewById(resources.getIdentifier("c$i$j", "id", packageName))
+                image.apply {
+                    setImageResource(0)
+                    setBackgroundColor(ContextCompat.getColor(this@MainActivity, getColorCell(i, j)))
+                }
+            }
+        }
     }
 
     fun onCellClicked(v: View) {
@@ -117,6 +178,7 @@ class MainActivity : AppCompatActivity() {
             bonus++
             binding.tvBonusData.text = " + $bonus"
         }
+        clearAllOptions()
 
         paintHorseCell(cellSelectedX, cellSelectedY, R.color.previous_cell)
         clearOptions(cellSelectedX, cellSelectedY)
@@ -134,6 +196,7 @@ class MainActivity : AppCompatActivity() {
             checkGameOver(x, y)
         } else {
             showMessage("You Win!!", "Next Level", false)
+            stopTime()
         }
 
     }
@@ -144,6 +207,7 @@ class MainActivity : AppCompatActivity() {
         if (listValidOptions(x, y).isEmpty()) {
             if (bonus == 0) {
                 showMessage("Game Over", "Try Again", true)
+                stopTime()
             } else {
                 allMovementAvailable = true
                 bonus--
@@ -163,7 +227,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMessage(title: String, action: String, isGameOver: Boolean) {
+    private fun clearAllOptions() {
+        board.forEachIndexed { index, array ->
+            array.indices.forEach { j ->
+                if (array[j] != 1) {
+                    clearOption(index, j)
+                }
+            }
+        }
+    }
+
+            private fun showMessage(title: String, action: String, isGameOver: Boolean) {
         binding.lyMessage.visibility = View.VISIBLE
         binding.tvTitleMessage.text = title
 
