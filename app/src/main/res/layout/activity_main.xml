@@ -859,7 +859,7 @@
                     android:visibility="visible">
 
                     <TextView
-                        android:id="@+id/tvIntroLevel"
+                        android:id="@+id/tvTitleMessage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="30dp"
@@ -872,7 +872,7 @@
                         android:textColor="@color/app_color_dark"
                         android:textAlignment="center" />
                     <TextView
-                        android:id="@+id/tvIntroLives"
+                        android:id="@+id/tvScoreMessage"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="40dp"

@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
     private var moves = 8*8
     private var movesRequired = 4
     private var bonus = 0
+    private var allMovementAvailable = false
     private lateinit var board: Array<IntArray>
     private lateinit var binding: ActivityMainBinding
 
@@ -35,15 +36,16 @@ class MainActivity : AppCompatActivity() {
         val x = name.substring(1, 2).toInt()
         val y = name.substring(2, 3).toInt()
 
-        if (!isCellSelected(x, y) && isMoveValid(x, y)) {
+        if (!isCellSelected(x, y) && isMovementValid(x, y)) {
+            allMovementAvailable = false
             selectCell(x, y)
         }
     }
 
-    private fun isMoveValid(x: Int, y: Int): Boolean {
+    private fun isMovementValid(x: Int, y: Int): Boolean {
         val diffX = abs(x - cellSelectedX)
         val diffY = abs(y - cellSelectedY)
-        return (diffX == 1 && diffY == 0) || (diffX == 0 && diffY == 1)
+        return (diffX == 1 && diffY == 0) || (diffX == 0 && diffY == 1 || allMovementAvailable)
     }
 
     private fun isCellSelected(x: Int, y: Int): Boolean = board[x][y] == 1
@@ -125,9 +127,50 @@ class MainActivity : AppCompatActivity() {
 
         setBoardCell(x, y, 1)
 
-        if (moves > 0 && isBonusMove(moves)) {
-            addNewBonus()
+        if (hasMoreMoves()) {
+            if (isBonusMove(moves)) {
+                addNewBonus()
+            }
+            checkGameOver(x, y)
+        } else {
+            showMessage("You Win!!", "Next Level", false)
         }
+
+    }
+
+    private fun hasMoreMoves(): Boolean = moves > 0
+
+    private fun checkGameOver(x: Int, y: Int) {
+        if (listValidOptions(x, y).isEmpty()) {
+            if (bonus == 0) {
+                showMessage("Game Over", "Try Again", true)
+            } else {
+                allMovementAvailable = true
+                bonus--
+                binding.tvBonusData.text = if (bonus > 0) " + $bonus" else ""
+                paintAllOptions()
+            }
+        }
+    }
+
+    private fun paintAllOptions() {
+        board.forEachIndexed { index, array ->
+            array.indices.forEach { j ->
+                if (array[j] != 1) {
+                    paintOption(index, j)
+                }
+            }
+        }
+    }
+
+    private fun showMessage(title: String, action: String, isGameOver: Boolean) {
+        binding.lyMessage.visibility = View.VISIBLE
+        binding.tvTitleMessage.text = title
+
+        val score: String = if (isGameOver) "Score: ${64 - moves}/64" else binding.tvTimeData.text.toString()
+        binding.tvScoreMessage.text = score
+
+        binding.tvAction.text = action
     }
 
     private fun isBonusCell(x: Int, y: Int): Boolean = board[x][y] == 2
