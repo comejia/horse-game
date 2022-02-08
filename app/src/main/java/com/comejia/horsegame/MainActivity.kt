@@ -30,9 +30,13 @@ import kotlin.math.abs
 class MainActivity : AppCompatActivity() {
     private var cellSelectedX = 0
     private var cellSelectedY = 0
+
     private var moves = 8*8
     private var movesRequired = 4
     private var bonus = 0
+    private var gameLevel: Int = 2
+    private var lives = 1
+
     private var allMovementAvailable = false
     private lateinit var board: Array<IntArray>
     private lateinit var binding: ActivityMainBinding
@@ -46,10 +50,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initScreenGame()
-        startGame()
+        startGame(gameLevel)
 
         binding.ibShare.setOnClickListener {
             shareGame()
+        }
+
+        binding.tvAction.setOnClickListener {
+            hideMessage()
+            startGame(gameLevel)
         }
     }
 
@@ -98,12 +107,49 @@ class MainActivity : AppCompatActivity() {
         return null
     }
 
-    private fun startGame() {
+    private fun startGame(level: Int) {
         resetBoard()
         clearBoard()
+        setLevelParameters(level)
         setFirstPosition()
         resetTime()
         startTime()
+    }
+
+    private fun setLevelParameters(level: Int) {
+        when (level) {
+            1 -> {
+                val column = (0..7).random()
+                moves = 64
+                movesRequired = 4
+                for (i in 0..7) {
+                    paintHorseCell(i, column, R.color.previous_cell)
+                    setBoardCell(i, column, 1)
+                }
+            }
+            2 -> {
+                val row = (0..7).random()
+                moves = 50
+                movesRequired = 6
+                for (i in 0..7) {
+                    paintHorseCell(row, i, R.color.previous_cell)
+                    setBoardCell(row, i, 1)
+                }
+            }
+            3 -> {
+                moves = 40
+                movesRequired = 10
+                for (i in 0..7) {
+                    val column = (0..7).random()
+                    val row = (0..7).random()
+                    paintHorseCell(row, column, R.color.previous_cell)
+                    setBoardCell(row, column, 1)
+                }
+            }
+        }
+        bonus = 0
+        binding.tvLevelNumber.text = level.toString()
+        binding.tvLiveData.text = lives.toString()
     }
 
     private fun startTime() {
@@ -226,8 +272,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setFirstPosition() {
-        cellSelectedX = (0..7).random()
-        cellSelectedY = (0..7).random()
+        do {
+            cellSelectedX = (0..7).random()
+            cellSelectedY = (0..7).random()
+        } while (!isCellEmpty(cellSelectedX, cellSelectedY))
 
         selectCell(cellSelectedX, cellSelectedY)
     }
@@ -252,13 +300,20 @@ class MainActivity : AppCompatActivity() {
         setBoardCell(x, y, 1)
 
         if (hasMoreMoves()) {
-            if (isBonusMove(moves)) {
-                addNewBonus()
+            if (isBoardComplete()) {
+                showMessage("You Win!!", "Next Level", false)
+                stopTime()
+                gameLevel++
+            } else {
+                checkGameOver(x, y)
+                if (isBonusMove(moves)) {
+                    addNewBonus()
+                }
             }
-            checkGameOver(x, y)
         } else {
             showMessage("You Win!!", "Next Level", false)
             stopTime()
+            gameLevel++
         }
 
     }
@@ -267,9 +322,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkGameOver(x: Int, y: Int) {
         if (listValidOptions(x, y).isEmpty()) {
-            if (bonus == 0) {
-                showMessage("Game Over", "Try Again", true)
+            /*if (isBoardComplete()) {
+                showMessage("You Win!!", "Next Level", false)
                 stopTime()
+                gameLevel++
+            }*/
+            if (bonus == 0) {
+                showMessage("Game Over", "Start Again", true)
+                stopTime()
+                gameLevel = 1
             } else {
                 allMovementAvailable = true
                 bonus--
@@ -278,6 +339,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun isBoardComplete(): Boolean = board.all { array -> array.all { cell -> cell == 1 } }
 
     private fun paintAllOptions() {
         board.forEachIndexed { index, array ->
