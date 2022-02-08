@@ -1,16 +1,29 @@
 package com.comejia.horsegame
 
+import android.Manifest
+import android.content.ContentValues
+import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Point
+import android.media.MediaScannerConnection
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
+import android.provider.MediaStore
 import android.util.TypedValue
 import android.view.View
 import android.widget.ImageView
 import android.widget.TableRow
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.test.runner.screenshot.ScreenCapture
+import androidx.test.runner.screenshot.Screenshot.capture
 import com.comejia.horsegame.databinding.ActivityMainBinding
+import java.sql.Timestamp
+import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
 
@@ -34,6 +47,55 @@ class MainActivity : AppCompatActivity() {
 
         initScreenGame()
         startGame()
+
+        binding.ibShare.setOnClickListener {
+            shareGame()
+        }
+    }
+
+    private fun shareGame() {
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 1)
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 1)
+
+        val screen: ScreenCapture = capture(this)
+        val timestamp = Timestamp(System.currentTimeMillis())
+
+        val bitmapPath = saveImage(screen.bitmap, "${timestamp}.jpg") ?: return
+
+        val shareIntent = Intent(Intent.ACTION_SEND)
+        shareIntent.apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(Intent.EXTRA_STREAM, Uri.parse(bitmapPath))
+            putExtra(Intent.EXTRA_TEXT, "Te desafio a ganarme!")
+            type = "image/png"
+        }
+
+        val finalShareIntent = Intent.createChooser(shareIntent, "Select the app you want to share the game to")
+        finalShareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        this.startActivity(finalShareIntent)
+    }
+
+    private fun saveImage(bitmap: Bitmap?, filename: String): String? {
+        if (bitmap == null) return null
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            val contentValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/Screenshots")
+            }
+            val uri = this.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+            return uri?.let {
+                this.contentResolver.openOutputStream(uri).use { output ->
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 85, output)
+                    output?.flush()
+                    output?.close()
+
+                    MediaScannerConnection.scanFile(this, arrayOf(uri.toString()), null, null)
+                }
+                it.toString()
+            }
+        }
+        return null
     }
 
     private fun startGame() {
@@ -237,7 +299,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-            private fun showMessage(title: String, action: String, isGameOver: Boolean) {
+    private fun showMessage(title: String, action: String, isGameOver: Boolean) {
         binding.lyMessage.visibility = View.VISIBLE
         binding.tvTitleMessage.text = title
 
