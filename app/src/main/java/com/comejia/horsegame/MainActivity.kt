@@ -25,6 +25,7 @@ import com.comejia.horsegame.databinding.ActivityMainBinding
 import com.google.android.gms.ads.*
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.stripe.android.PaymentConfiguration
 import java.sql.Timestamp
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -68,6 +69,15 @@ class MainActivity : AppCompatActivity() {
         binding.tvAction.setOnClickListener {
             hideMessage()
             startGame(gameLevel)
+        }
+
+        binding.tvPremium.setOnClickListener {
+            PaymentConfiguration.init(
+                applicationContext,
+                "pk_test_51KRHdUDkQeaYXBNWloY1g7Bq5jDCLMZbsyakZMKVI7pwUOnxnoTqdOVDixGDkEFJC4BS3cdcyzWndAEYNFYLto28004DXjxtJP"
+            )
+            val intent = Intent(this, CheckoutActivity::class.java)
+            startActivity(intent)
         }
     }
 
