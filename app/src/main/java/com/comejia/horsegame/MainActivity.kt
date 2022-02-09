@@ -22,16 +22,21 @@ import androidx.core.content.ContextCompat
 import androidx.test.runner.screenshot.ScreenCapture
 import androidx.test.runner.screenshot.Screenshot.capture
 import com.comejia.horsegame.databinding.ActivityMainBinding
+import com.google.android.gms.ads.*
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import java.sql.Timestamp
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
     private var cellSelectedX = 0
     private var cellSelectedY = 0
 
-    private var moves = 8*8
+    private var moves = 64
+    private var maxMoves = 64
     private var movesRequired = 4
     private var bonus = 0
     private var gameLevel: Int = 2
@@ -44,10 +49,14 @@ class MainActivity : AppCompatActivity() {
     private var timeHandler: Handler? = null
     private var timeInSeconds = 0L
 
+    private var mInterstitialAd: InterstitialAd? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        initAdMob()
 
         initScreenGame()
         startGame(gameLevel)
@@ -59,6 +68,53 @@ class MainActivity : AppCompatActivity() {
         binding.tvAction.setOnClickListener {
             hideMessage()
             startGame(gameLevel)
+        }
+    }
+
+    private fun initAdMob() {
+        MobileAds.initialize(this) {}
+
+        val adView = AdView(this)
+        adView.adSize = AdSize.BANNER
+        adView.adUnitId = "ca-app-pub-3940256099942544/6300978111"
+        //adView.adUnitId = "ca-app-pub-5799979923933664/1530356904"
+
+        binding.lyAdsBanner.addView(adView)
+
+        val adRequest = AdRequest.Builder().build()
+        adView.loadAd(adRequest)
+    }
+
+    private fun initInterstitial() {
+        val adRequest = AdRequest.Builder().build()
+
+        InterstitialAd.load(this,"ca-app-pub-3940256099942544/1033173712", adRequest, object : InterstitialAdLoadCallback() {
+        //InterstitialAd.load(this,"ca-app-pub-5799979923933664/9217275231", adRequest, object : InterstitialAdLoadCallback() {
+            override fun onAdFailedToLoad(adError: LoadAdError) {
+                mInterstitialAd = null
+            }
+
+            override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                mInterstitialAd = interstitialAd
+            }
+        })
+    }
+
+    private fun showInterstitial() {
+        if (mInterstitialAd != null) {
+            mInterstitialAd?.fullScreenContentCallback = object: FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+
+                }
+                override fun onAdFailedToShowFullScreenContent(adError: AdError?) {
+
+                }
+                override fun onAdShowedFullScreenContent() {
+                    mInterstitialAd = null
+                }
+            }
+
+            mInterstitialAd?.show(this)
         }
     }
 
@@ -108,6 +164,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startGame(level: Int) {
+        initInterstitial()
         resetBoard()
         clearBoard()
         setLevelParameters(level)
@@ -121,6 +178,7 @@ class MainActivity : AppCompatActivity() {
             1 -> {
                 val column = (0..7).random()
                 moves = 64
+                maxMoves = moves
                 movesRequired = 4
                 for (i in 0..7) {
                     paintHorseCell(i, column, R.color.previous_cell)
@@ -130,6 +188,7 @@ class MainActivity : AppCompatActivity() {
             2 -> {
                 val row = (0..7).random()
                 moves = 50
+                maxMoves = moves
                 movesRequired = 6
                 for (i in 0..7) {
                     paintHorseCell(row, i, R.color.previous_cell)
@@ -138,6 +197,7 @@ class MainActivity : AppCompatActivity() {
             }
             3 -> {
                 moves = 40
+                maxMoves = moves
                 movesRequired = 10
                 for (i in 0..7) {
                     val column = (0..7).random()
@@ -322,11 +382,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkGameOver(x: Int, y: Int) {
         if (listValidOptions(x, y).isEmpty()) {
-            /*if (isBoardComplete()) {
-                showMessage("You Win!!", "Next Level", false)
-                stopTime()
-                gameLevel++
-            }*/
             if (bonus == 0) {
                 showMessage("Game Over", "Start Again", true)
                 stopTime()
@@ -366,10 +421,13 @@ class MainActivity : AppCompatActivity() {
         binding.lyMessage.visibility = View.VISIBLE
         binding.tvTitleMessage.text = title
 
-        val score: String = if (isGameOver) "Score: ${64 - moves}/64" else binding.tvTimeData.text.toString()
+        val score: String = if (isGameOver) "Score: ${maxMoves - moves}/$maxMoves" else binding.tvTimeData.text.toString()
         binding.tvScoreMessage.text = score
 
         binding.tvAction.text = action
+        if (isGameOver) {
+            showInterstitial()
+        }
     }
 
     private fun isBonusCell(x: Int, y: Int): Boolean = board[x][y] == 2
