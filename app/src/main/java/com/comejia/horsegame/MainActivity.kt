@@ -3,6 +3,7 @@ package com.comejia.horsegame
 import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Point
 import android.media.MediaScannerConnection
@@ -19,6 +20,7 @@ import android.widget.ImageView
 import android.widget.TableRow
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.allViews
 import androidx.test.runner.screenshot.ScreenCapture
 import androidx.test.runner.screenshot.Screenshot.capture
 import com.comejia.horsegame.databinding.ActivityMainBinding
@@ -27,10 +29,8 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.stripe.android.PaymentConfiguration
 import java.sql.Timestamp
-import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import kotlin.properties.Delegates
 
 class MainActivity : AppCompatActivity() {
     private var cellSelectedX = 0
@@ -52,15 +52,19 @@ class MainActivity : AppCompatActivity() {
 
     private var mInterstitialAd: InterstitialAd? = null
 
+    private var premium: Boolean = false
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var editor: SharedPreferences.Editor
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        initAdMob()
-
         initScreenGame()
-        startGame(gameLevel)
+
+        initPreferences()
 
         binding.ibShare.setOnClickListener {
             shareGame()
@@ -77,8 +81,34 @@ class MainActivity : AppCompatActivity() {
                 "pk_test_51KRHdUDkQeaYXBNWloY1g7Bq5jDCLMZbsyakZMKVI7pwUOnxnoTqdOVDixGDkEFJC4BS3cdcyzWndAEYNFYLto28004DXjxtJP"
             )
             val intent = Intent(this, CheckoutActivity::class.java)
+            intent.putExtra("level", gameLevel)
             startActivity(intent)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        checkPremium()
+        startGame(gameLevel)
+    }
+
+    private fun checkPremium() {
+        premium = sharedPreferences.getBoolean("PREMIUM", false)
+
+        if (premium) {
+            gameLevel = sharedPreferences.getInt("LEVEL", 1)
+            binding.lyPremium.removeAllViews()
+            binding.lyAdsBanner.removeAllViews()
+            binding.svGame.setPadding(0, 0, 0,0)
+        } else {
+            initAdMob()
+        }
+    }
+
+    private fun initPreferences() {
+        sharedPreferences = getSharedPreferences("sharedPrefs", MODE_PRIVATE)
+        editor = sharedPreferences.edit()
     }
 
     private fun initAdMob() {
@@ -89,6 +119,7 @@ class MainActivity : AppCompatActivity() {
         adView.adUnitId = "ca-app-pub-3940256099942544/6300978111"
         //adView.adUnitId = "ca-app-pub-5799979923933664/1530356904"
 
+        binding.lyAdsBanner.removeAllViews()
         binding.lyAdsBanner.addView(adView)
 
         val adRequest = AdRequest.Builder().build()
@@ -374,6 +405,7 @@ class MainActivity : AppCompatActivity() {
                 showMessage("You Win!!", "Next Level", false)
                 stopTime()
                 gameLevel++
+                editor.putInt("LEVEL", gameLevel).apply()
             } else {
                 checkGameOver(x, y)
                 if (isBonusMove(moves)) {
@@ -384,6 +416,7 @@ class MainActivity : AppCompatActivity() {
             showMessage("You Win!!", "Next Level", false)
             stopTime()
             gameLevel++
+            editor.putInt("LEVEL", gameLevel).apply()
         }
 
     }
@@ -435,7 +468,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvScoreMessage.text = score
 
         binding.tvAction.text = action
-        if (isGameOver) {
+        if (isGameOver && !premium) {
             showInterstitial()
         }
     }

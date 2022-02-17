@@ -17,6 +17,8 @@
         <entry key="app/src/main/res/drawable/option_white.xml" value="0.3854166666666667" />
         <entry key="app/src/main/res/layout/activity_checkout.xml" value="0.18072916666666666" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.1" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.186" />
+        <entry key="app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.186" />
       </map>
     </option>
   </component>

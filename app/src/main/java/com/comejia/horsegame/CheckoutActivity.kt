@@ -1,5 +1,7 @@
 package com.comejia.horsegame
 
+import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 import android.os.Bundle
 import android.view.View
@@ -28,9 +30,14 @@ class CheckoutActivity : AppCompatActivity() {
 
     private lateinit var payButton: Button
 
+    private var level: Int? = 1
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_checkout)
+
+        val bundle = intent.extras
+        level = bundle?.getInt("level") ?: 1
 
         // Hook up the pay button
         payButton = findViewById(R.id.payButton)
@@ -118,6 +125,7 @@ class CheckoutActivity : AppCompatActivity() {
         when (paymentResult) {
             is PaymentSheetResult.Completed -> {
                 showToast("Payment complete!")
+                becamePremium(level)
             }
             is PaymentSheetResult.Canceled -> {
                 Log.i(TAG, "Payment canceled!")
@@ -126,5 +134,17 @@ class CheckoutActivity : AppCompatActivity() {
                 showAlert("Payment failed", paymentResult.error.localizedMessage)
             }
         }
+    }
+
+    private fun becamePremium(level: Int?) {
+        val sharedPreferences: SharedPreferences = getSharedPreferences("sharedPrefs", MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.apply {
+            putBoolean("PREMIUM", true)
+            putInt("LEVEL", level!!)
+        }.apply()
+
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
     }
 }
