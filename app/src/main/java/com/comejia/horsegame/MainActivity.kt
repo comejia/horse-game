@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.graphics.Point
+import android.media.MediaPlayer
 import android.media.MediaScannerConnection
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -56,14 +57,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
 
+    private lateinit var mpYouWin: MediaPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        initSound()
         initScreenGame()
-
         initPreferences()
 
         binding.ibShare.setOnClickListener {
@@ -73,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         binding.tvAction.setOnClickListener {
             hideMessage()
             startGame(gameLevel)
+            mpYouWin.stop()
         }
 
         binding.tvPremium.setOnClickListener {
@@ -91,6 +94,11 @@ class MainActivity : AppCompatActivity() {
 
         checkPremium()
         startGame(gameLevel)
+    }
+
+    private fun initSound() {
+        mpYouWin = MediaPlayer.create(this, R.raw.win)
+        mpYouWin.isLooping = false
     }
 
     private fun checkPremium() {
@@ -406,6 +414,7 @@ class MainActivity : AppCompatActivity() {
                 stopTime()
                 gameLevel++
                 editor.putInt("LEVEL", gameLevel).apply()
+                mpYouWin.start()
             } else {
                 checkGameOver(x, y)
                 if (isBonusMove(moves)) {
@@ -417,6 +426,7 @@ class MainActivity : AppCompatActivity() {
             stopTime()
             gameLevel++
             editor.putInt("LEVEL", gameLevel).apply()
+            mpYouWin.start()
         }
 
     }
